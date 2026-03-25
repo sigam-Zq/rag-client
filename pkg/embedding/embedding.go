@@ -49,3 +49,56 @@ func GetEmbedding(text string) ([]float64, error) {
 
 	return result.Embedding, nil
 }
+
+// ChatMessage defines the structure for a message in Ollama's chat API.
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// ChatRequest defines the structure for the Ollama chat API request.
+type ChatRequest struct {
+	Model    string        `json:"model"`
+	Messages []ChatMessage `json:"messages"`
+	Stream   bool          `json:"stream"`
+}
+
+// ChatResponse defines the structure for the Ollama chat API response.
+type ChatResponse struct {
+	Model   string      `json:"model"`
+	Message ChatMessage `json:"message"`
+	Done    bool        `json:"done"`
+}
+
+// Chat sends a list of messages to the Ollama chat API and returns the response message.
+func Chat(model string, messages []ChatMessage) (string, error) {
+	reqBody := ChatRequest{
+		Model:    model,
+		Messages: messages,
+		Stream:   false,
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal chat request: %w", err)
+	}
+
+	resp, err := http.Post("http://localhost:11434/api/chat", "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", fmt.Errorf("request to ollama chat failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		var errResp map[string]interface{}
+		json.NewDecoder(resp.Body).Decode(&errResp)
+		return "", fmt.Errorf("ollama chat error (status %d): %v", resp.StatusCode, errResp)
+	}
+
+	var result ChatResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("failed to decode ollama chat response: %w", err)
+	}
+
+	return result.Message.Content, nil
+}

@@ -17,6 +17,7 @@ A command-line tool for indexing and searching documents in the Qdrant vector da
 - **Advanced Vector Search**:
     - **Global Search**: Search across all collections simultaneously to find the most relevant results.
     - **Scoped Search**: Specify a collection to narrow down the search scope.
+- **RAG Support (Chat with LLM)**: Ask questions and get answers powered by Ollama, using retrieved document context to improve accuracy.
 - **Clean Architecture**: A well-organized project structure with modular packages for clarity and maintainability.
 
 ### Project Structure
@@ -68,6 +69,16 @@ Use the `-c` or `--collection` flag to specify the document collection.
 - `--limit <N>`: Number of results to return (default: 5).
 - `--score`: Show the similarity score for each result.
 
+#### Ask with RAG (LLM)
+Ask a question and get an answer based on your documents.
+```bash
+./qdrant-cli llm "How to update CKA exam?"
+```
+
+**Options:**
+- `-m, --model <name>`: Specify Ollama model (default: `deepseek-r1:7b`).
+- `-l, --limit <N>`: Number of context chunks to retrieve (default: 5).
+
 ---
 
 <a name="chinese"></a>
@@ -83,6 +94,7 @@ Use the `-c` or `--collection` flag to specify the document collection.
 - **高级向量搜索**：
     - **全局搜索**：同时在所有 Collection 中搜索，以找到最相关的结果。
     - **范围搜索**：可指定单个 Collection，以缩小搜索范围。
+- **RAG 支持 (对话与 LLM)**：通过 Ollama 发起对话，并结合检索到的文档内容提供准确的回答。
 - **清晰架构**：组织良好的项目结构，采用模块化包，清晰易维护。
 
 ### 项目结构
@@ -133,3 +145,13 @@ go build -o qdrant-cli
 **其他搜索选项：**
 - `--limit <N>`：返回结果的数量（默认为 5）。
 - `--score`：显示每个结果的相似度分数。
+
+#### 使用 RAG 提问 (LLM)
+基于你的文档进行提问。
+```bash
+./qdrant-cli llm "CKA 考试如何更新？"
+```
+
+**选项：**
+- `-m, --model <name>`: 指定 Ollama 模型（默认：`deepseek-r1:7b`）。
+- `-l, --limit <N>`: 检索的上下文块数量（默认：5）。

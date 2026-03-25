@@ -68,3 +68,55 @@ func SanitizeCollectionName(filePath string) string {
 
 	return name
 }
+
+// Ask takes a question, searches for relevant context in the vector database, and uses an LLM to generate an answer.
+func Ask(question, model string, limit int) (string, error) {
+	// 1. Get embedding for the question
+	vec, err := embedding.GetEmbedding(question)
+	if err != nil {
+		return "", fmt.Errorf("failed to get embedding for question: %w", err)
+	}
+
+	// 2. Search across all collections in Qdrant
+	results, err := qdrant.SearchAllCollections(vec, limit)
+	if err != nil {
+		return "", fmt.Errorf("failed to search collections: %w", err)
+	}
+
+	if len(results) == 0 {
+		// If no context found, still ask the LLM but inform it there's no specific context.
+		messages := []embedding.ChatMessage{
+			{
+				Role:    "user",
+				Content: question,
+			},
+		}
+		return embedding.Chat(model, messages)
+	}
+
+	// 3. Format the retrieved context
+	var contextBuilder strings.Builder
+	for i, r := range results {
+		if text, ok := r.Payload["text"].(string); ok {
+			contextBuilder.WriteString(fmt.Sprintf("[Context %d (from %s)]: %s\n", i+1, r.CollectionName, text))
+		}
+	}
+
+	// 4. Construct a prompt with context and question
+	prompt := fmt.Sprintf(`Use the following retrieved context to answer the user's question. If the context doesn't contain enough information, use your general knowledge but mention that the context was insufficient.
+
+Context:
+%s
+
+Question: %s`, contextBuilder.String(), question)
+
+	messages := []embedding.ChatMessage{
+		{
+			Role:    "user",
+			Content: prompt,
+		},
+	}
+
+	// 5. Call LLM
+	return embedding.Chat(model, messages)
+}
